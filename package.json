@@ -1,0 +1,14 @@
+{
+  "name": "helper",
+  "version": "0.0.1",
+  "description": "A command line interface to help getting things done on the Onto-DESIDE pods.",
+  "main": "bin/cli.js -h",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Martin Vanbrabant",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^13.1.0"
+  }
+}
