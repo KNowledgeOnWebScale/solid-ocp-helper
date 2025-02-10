@@ -75,7 +75,7 @@ WHERE {
       sources: [infoObject.index],
       lenient: true
     }
-    let allSources = [];
+    let allSources = [infoObject.index];
     let newSources = [];
     newEngine();
     do {
@@ -99,6 +99,70 @@ async function prepareAllPods(status, vcService) {
   console.log('Preparing all pods.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
     await preparePod(infoObject, vcService);
+  }
+}
+
+/**
+ * Check if a resource is in the pod owned by a webId
+ *
+ * @param {String} resourceUrl the resource URL
+ * @param {String} webId the webId
+ * @returns {Boolean} 
+ */
+async function ownedBy(resourceUrl, webId) {
+  const podQuery = `
+PREFIX pim: <http://www.w3.org/ns/pim/space#>
+
+SELECT ?pod
+WHERE {
+  <${webId}> pim:storage ?pod .
+}
+`;
+  const pods = await queryTermsNotVariables(podQuery, { sources: [webId] });
+  let owned = pods.some((pod) => resourceUrl.startsWith(pod));
+  if (!owned) {
+    // fallback for the case of no pim:storage predicate
+    const pod = webId.substring(0, webId.lastIndexOf('profile/card'));
+    owned = resourceUrl.startsWith(pod);
+  }
+  return owned;
+}
+
+/**
+ * Get a resource (as text)
+ *
+ * @param {String} resourceUrl the resource URL
+ * @param {Function} authFunction the (authenticated) fetch function to use
+ * @returns {String} the resource contents as text
+ */
+async function getResource(resourceUrl, authFunction) {
+  const response = await authFunction(resourceUrl, {
+    method: 'GET'
+  });
+  if (!response.ok) {
+    throw new Error(`Could not get ${resourceUrl}: ${response.status}`);
+  }
+  return await response.text();
+}
+
+async function addAllVerifiableCredentials(status, authFetchFunctions) {
+  console.log('Adding all verifiable credentials.');
+  for (const infoObject of Object.values(status.yarrrmlInfo)) {
+    const webId = infoObject.webId;
+    console.log(`Adding verifiable credentials for ${webId}.`);
+    for (const resourceUrl of status.newDataSources[webId]) {
+      if (await ownedBy(resourceUrl, webId)) {
+        try {
+          const data = await getResource(resourceUrl, authFetchFunctions[webId]);
+          console.log(`Read resource ${resourceUrl}.`);
+          //console.log(data);
+          //const dataVC = await makeVC(data, vcService);
+          //await putResource(dataVC, authFetchFunctions[webId]);
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    }
   }
 }
 
@@ -134,7 +198,7 @@ export async function step2(statusFile, vcService) {
   status.newDataSources = newDataSources;
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   await prepareAllPods(status, vcService);
-  //await addAllVerifiableCredentials(status, authFetchFunctions);
+  await addAllVerifiableCredentials(status, authFetchFunctions, vcService);
   //await deleteAllObsoleteDataSources(status, authFetchFunctions);
   //await deleteClientCredentials(status);
   console.log(`Step 2 finished; pods updated; see also updated ${statusFile}.`);
