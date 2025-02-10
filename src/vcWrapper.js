@@ -34,3 +34,31 @@ export async function preparePod(authInfo, vcService) {
   }
 }
 
+/**
+ * Make a verifiable credentials object
+ *
+ * @param {Object} authInfo authentication info of an actor
+ * @param {String} contentType content type of the input data
+ * @param {String} text input data as text
+ * @param {String} vcService URL of the VC service
+ * @returns {Array} [content type of the verifiable credentials object, the verifiable credentials object serialized as text]
+ */
+export async function makeVC(authInfo, contentType, text, vcService) {
+  const { webId, username, password, oidcIssuer } = authInfo;
+  const response = await fetch(`${vcService}/issue`, {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      'contentType': contentType,
+      'email': username,
+      'password': password,
+      'css': oidcIssuer,
+      'webId': webId,
+      'data': text
+    })
+  })
+  const vc = await response.text();
+  return ['application/ld+json', vc];
+}

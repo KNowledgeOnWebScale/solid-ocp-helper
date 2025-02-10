@@ -2,7 +2,7 @@ import fs from 'fs';
 import YAML from 'yaml';
 import { getAuthenticatedFetch } from './clientCredentials.js';
 import { newEngine, queryTermsNotVariables } from './comunicaEngineWrapper.js';
-import { preparePod } from './vcWrapper.js';
+import { preparePod, makeVC } from './vcWrapper.js';
 
 /**
  * Gets all info from YARRRML file
@@ -103,7 +103,7 @@ async function prepareAllPods(status, vcService) {
 }
 
 /**
- * Check if a resource is in the pod owned by a webId
+ * Checks if a resource is in the pod owned by a webId
  *
  * @param {String} resourceUrl the resource URL
  * @param {String} webId the webId
@@ -129,34 +129,65 @@ WHERE {
 }
 
 /**
- * Get a resource (as text)
+ * Gets a resource as text
  *
  * @param {String} resourceUrl the resource URL
- * @param {Function} authFunction the (authenticated) fetch function to use
- * @returns {String} the resource contents as text
+ * @param {Function} authFetchFunction the (authenticated) fetch function to use
+ * @returns {Array} [content type, the resource contents as text]
  */
-async function getResource(resourceUrl, authFunction) {
-  const response = await authFunction(resourceUrl, {
+async function getResourceText(resourceUrl, authFetchFunction) {
+  const response = await authFetchFunction(resourceUrl, {
     method: 'GET'
   });
   if (!response.ok) {
     throw new Error(`Could not get ${resourceUrl}: ${response.status}`);
   }
-  return await response.text();
+  const contentType = response.headers.get("Content-Type");
+  const text = await response.text();
+  return [ contentType, text ];
 }
 
-async function addAllVerifiableCredentials(status, authFetchFunctions) {
+/**
+ * Puts a resource
+ *
+ * @param {String} resourceUrl the resource URL
+ * @param {String} contentTypeOut the content type
+ * @param {String} text the resource contents as text
+ * @param {Function} authFetchFunction the (authenticated) fetch function to use
+ */
+async function putResource(resourceUrl, contentTypeOut, text, authFetchFunction) {
+  const response = await authFetchFunction(resourceUrl, {
+    method: 'PUT',
+    headers: {
+      'content-type': contentTypeOut
+    },
+    body: text
+  });
+  if (!response.ok) {
+    throw new Error(`Could not put ${resourceUrl}: ${response.status}`);
+  }
+}
+
+/**
+ * Adds all verifiable credentials objects (replacing the original resources)
+ *
+ * @param {Object} status current status as in status file
+ * @param {Object} authFetchFunctions object containing an (authenticated) fetch function per webId
+ * @param {String} vcService URL of the VC service
+ */
+async function addAllVerifiableCredentials(status, authFetchFunctions, vcService) {
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
     const webId = infoObject.webId;
     console.log(`Adding verifiable credentials for ${webId}.`);
     for (const resourceUrl of status.newDataSources[webId]) {
       if (await ownedBy(resourceUrl, webId)) {
         try {
-          const data = await getResource(resourceUrl, authFetchFunctions[webId]);
-          console.log(`Read resource ${resourceUrl}.`);
-          //console.log(data);
-          //const dataVC = await makeVC(data, vcService);
-          //await putResource(dataVC, authFetchFunctions[webId]);
+          const [ contentTypeIn, text ] = await getResourceText(resourceUrl, authFetchFunctions[webId]);
+          //console.log(`Read resource ${resourceUrl}; contentType: ${contentTypeIn}; text: ${text}.`);
+          const [ contentTypeOut, vc ] = await makeVC(infoObject, contentTypeIn, text, vcService);
+          //console.log(`Verifiable credentials: contentType: ${contentTypeOut}; vc: ${vc}.`);
+          await putResource(resourceUrl, contentTypeOut, vc, authFetchFunctions[webId]);
+          console.log(`Put resource ${resourceUrl}.`);
         } catch (e) {
           console.log(e);
         }
