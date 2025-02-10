@@ -1,7 +1,7 @@
 import fs from 'fs';
 import YAML from 'yaml';
 import { getAuthenticatedFetch } from './client-credentials.js';
-import { queryTermsNotVariables } from './comunicaEngineWrapper.js';
+import { newEngine, queryTermsNotVariables } from './comunicaEngineWrapper.js';
 
 /**
  * Gets all info from YARRRML file
@@ -70,15 +70,20 @@ WHERE {
     const indexQuery = setupObject.indexQuery || defaultIndexQuery;
     const context = {
       fetch: authFetchFunctions[setupObject.webId],
+      // start at the index in first iteration
       sources: [setupObject.index],
       lenient: true
     }
-    // first query, on index resource
-    const sources1 = await queryTermsNotVariables(indexQuery, context);
-    context.sources = sources1;
-    // second query, on sources resulting from first query
-    const sources2 = await queryTermsNotVariables(indexQuery, context);
-    dataSources[setupObject.webId] = Array.from(new Set([...sources1, ...sources2]));
+    let allSources = [];
+    let newSources = [];
+    newEngine();
+    do {
+      newSources = await queryTermsNotVariables(indexQuery, context);
+      allSources = [...allSources, ...newSources];
+      // dig deeper in next iteration
+      context.sources = newSources;
+    } while (newSources.length > 0)
+    dataSources[setupObject.webId] = Array.from(new Set(allSources));
   }
   return dataSources;
 }

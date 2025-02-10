@@ -4,6 +4,15 @@
 
 import { QueryEngine } from "@comunica/query-sparql";
 
+let engine;
+
+/**
+ * Make a new engine; forget history
+ */
+export function newEngine() {
+  engine = new QueryEngine();
+}
+
 /**
 * Execute one SPARQL query with the engine
 * 
@@ -12,10 +21,11 @@ import { QueryEngine } from "@comunica/query-sparql";
 * @returns {Array} the query result as an array of objects (property name: variable name; property value: term value)
 */
 export async function query(queryText, context) {
-  // a new engine per call; no history
-  const engine = new QueryEngine();
   const results = [];
 
+  if (!engine) {
+    engine = new QueryEngine();
+  }
   let result = await engine.query(queryText, {
     ...context
   });
