@@ -96,8 +96,8 @@ WHERE {
  * @param {String} vcService URL of the VC service
  */
 async function prepareAllPods(status, vcService) {
-  console.log('Preparing all pods.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
+    console.log(`Preparing pod of ${infoObject.webId}.`);
     await preparePod(infoObject, vcService);
   }
 }
@@ -146,7 +146,6 @@ async function getResource(resourceUrl, authFunction) {
 }
 
 async function addAllVerifiableCredentials(status, authFetchFunctions) {
-  console.log('Adding all verifiable credentials.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
     const webId = infoObject.webId;
     console.log(`Adding verifiable credentials for ${webId}.`);

@@ -29,7 +29,7 @@ export async function preparePod(authInfo, vcService) {
     if (result === 'true') {
       console.log(`>>> ${webId} is ready for VC now.`);
     } else {
-      console.error(`>>> Adding VC keypair to ${webId} failed.`);
+      throw new Error(`>>> Adding VC keypair to ${webId} failed.`);
     }
   }
 }
