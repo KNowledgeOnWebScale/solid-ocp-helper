@@ -1,7 +1,8 @@
 import fs from 'fs';
 import YAML from 'yaml';
-import { getAuthenticatedFetch } from './client-credentials.js';
+import { getAuthenticatedFetch } from './clientCredentials.js';
 import { newEngine, queryTermsNotVariables } from './comunicaEngineWrapper.js';
+import { preparePod } from './vcWrapper.js';
 
 /**
  * Gets all info from YARRRML file
@@ -91,38 +92,13 @@ WHERE {
 /**
  * Prepares all pods for verifiable credentials
  *
- * (Code picked from https://gitlab.ilabt.imec.be/rml/util/solid-target-helper/-/blob/solid-target-helper-with-vc/podVCSetup.js?ref_type=heads)
- * 
  * @param {Object} status current status as in status file
  * @param {String} vcService URL of the VC service
  */
 async function prepareAllPods(status, vcService) {
+  console.log('Preparing all pods.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
-    console.log(`Preparing pod for ${infoObject.webId}.`);
-    console.log(`>>> Checking if ${infoObject.webId} is ready for VC.`);
-    const response = await fetch(infoObject.webId);
-    const card = await response.text();
-    if (card.includes("https://w3id.org/security#assertionMethod")) {
-      console.log('>>> it is...');
-    } else {
-      console.log('>>> Adding VC keypair.')
-      const response = await fetch(`${vcService}/setup`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          'email': infoObject.username,
-          'password': infoObject.password,
-          'css': infoObject.oidcIssuer,
-          'webId': infoObject.webId
-        })
-      });
-      const result = await response.text();
-      if (result === 'true') {
-        console.log(`>>> ${infoObject.webId} is ready for VC now.`);
-      } else {
-        console.error(`>>> Adding VC keypair to ${infoObject.webId} failed.`);
-      }
-    }
+    await preparePod(infoObject, vcService);
   }
 }
 
@@ -158,8 +134,8 @@ export async function step2(statusFile, vcService) {
   status.newDataSources = newDataSources;
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   await prepareAllPods(status, vcService);
-  //addAllVerifiableCredentials(status, authFetchFunctions);
-  //deleteAllObsoleteDataSources(status, authFetchFunctions);
-  //deleteClientCredentials(status);
+  //await addAllVerifiableCredentials(status, authFetchFunctions);
+  //await deleteAllObsoleteDataSources(status, authFetchFunctions);
+  //await deleteClientCredentials(status);
   console.log(`Step 2 finished; pods updated; see also updated ${statusFile}.`);
 }
