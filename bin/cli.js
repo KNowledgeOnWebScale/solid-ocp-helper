@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { step1 }  from '../src/main.js';
+import { step1, step2 }  from '../src/main.js';
 
 const program = new Command();
 
@@ -18,9 +18,11 @@ program.command('step1')
 
 program.command('step2')
   .description('The second step')
-  .requiredOption('-s, --status <file>', 'status file written in step1 (input')
+  .requiredOption('-s, --status <file>', 'status file (input and output)')
+  .option('-v, --vc-service <url', 'URL of the vc-service', 'http://localhost:4444')
   .action(async (options) => {
-    console.log("Step 2 actions coming soon...");
+    console.log("Step 2 actions...");
+    await step2(options.status, options.vcService);
   });
 
 program.parse();

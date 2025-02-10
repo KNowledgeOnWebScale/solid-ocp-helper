@@ -1,6 +1,9 @@
+// Code picked from https://gitlab.ilabt.imec.be/rml/util/solid-target-helper/-/blob/solid-target-helper-with-vc/client-credentials.js?ref_type=heads
+
 import fetch from 'node-fetch';
 import { createDpopHeader, generateDpopKeyPair, buildAuthenticatedFetch } from '@inrupt/solid-client-authn-core';
 import urljoin from 'url-join';
+
 /*
 We took most of the code in this file literally from
 https://github.com/CommunitySolidServer/CommunitySolidServer/blob/862cc9a365f668df1b02f857a6eb9caf9639db5b/documentation/markdown/usage/client-credentials.md

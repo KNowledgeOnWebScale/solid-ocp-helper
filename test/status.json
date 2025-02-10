@@ -40,5 +40,30 @@
       "http://localhost:3011/electronics_user5/ceon/product-XYU3987",
       "http://localhost:3011/electronics_user6/ceon/product-DKGP543"
     ]
+  },
+  "newDataSources": {
+    "http://localhost:3011/electronics_user2/profile/card#me": [
+      "http://localhost:3011/electronics_user1/ceon/index",
+      "http://localhost:3011/electronics_user2/ceon/index",
+      "http://localhost:3011/electronics_user3/ceon/index",
+      "http://localhost:3011/electronics_user4/ceon/index",
+      "http://localhost:3011/electronics_user5/ceon/index",
+      "http://localhost:3011/electronics_user6/ceon/index",
+      "http://localhost:3011/electronics_user2/ceon/product-IUYT567"
+    ],
+    "http://localhost:3011/electronics_user6/profile/card#me": [
+      "http://localhost:3011/electronics_user1/ceon/index",
+      "http://localhost:3011/electronics_user2/ceon/index",
+      "http://localhost:3011/electronics_user3/ceon/index",
+      "http://localhost:3011/electronics_user4/ceon/index",
+      "http://localhost:3011/electronics_user5/ceon/index",
+      "http://localhost:3011/electronics_user6/ceon/index",
+      "http://localhost:3011/electronics_user1/ceon/product-JUY9242",
+      "http://localhost:3011/electronics_user2/ceon/product-IUYT567",
+      "http://localhost:3011/electronics_user3/ceon/product-OIP8597",
+      "http://localhost:3011/electronics_user4/ceon/product-VTE0953",
+      "http://localhost:3011/electronics_user5/ceon/product-XYU3987",
+      "http://localhost:3011/electronics_user6/ceon/product-DKGP543"
+    ]
   }
 }

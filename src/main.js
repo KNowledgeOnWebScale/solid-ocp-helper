@@ -37,13 +37,13 @@ function getNeededInfoFromYarrrmlFile(yarrrmlFile) {
  */
 async function getAllAuthFetchFunctions(yarrrmlInfo) {
   const authFetchFunctions = {};
-  for (const setupObject of Object.values(yarrrmlInfo)) {
-    console.log(`Getting authenticated fetch function for ${setupObject.webId}.`);
-    authFetchFunctions[setupObject.webId] = await getAuthenticatedFetch(
-      setupObject.username,
-      setupObject.password,
-      setupObject.oidcIssuer,
-      setupObject.webId)
+  for (const infoObject of Object.values(yarrrmlInfo)) {
+    console.log(`Getting authenticated fetch function for ${infoObject.webId}.`);
+    authFetchFunctions[infoObject.webId] = await getAuthenticatedFetch(
+      infoObject.username,
+      infoObject.password,
+      infoObject.oidcIssuer,
+      infoObject.webId)
   }
   return authFetchFunctions;
 }
@@ -65,13 +65,13 @@ WHERE {
 }
 `;
   const dataSources = {};
-  for (const setupObject of Object.values(yarrrmlInfo)) {
-    console.log(`Getting data sources for ${setupObject.webId}.`);
-    const indexQuery = setupObject.indexQuery || defaultIndexQuery;
+  for (const infoObject of Object.values(yarrrmlInfo)) {
+    console.log(`Getting data sources for ${infoObject.webId}.`);
+    const indexQuery = infoObject.indexQuery || defaultIndexQuery;
     const context = {
-      fetch: authFetchFunctions[setupObject.webId],
+      fetch: authFetchFunctions[infoObject.webId],
       // start at the index in first iteration
-      sources: [setupObject.index],
+      sources: [infoObject.index],
       lenient: true
     }
     let allSources = [];
@@ -83,9 +83,47 @@ WHERE {
       // dig deeper in next iteration
       context.sources = newSources;
     } while (newSources.length > 0)
-    dataSources[setupObject.webId] = Array.from(new Set(allSources));
+    dataSources[infoObject.webId] = Array.from(new Set(allSources));
   }
   return dataSources;
+}
+
+/**
+ * Prepares all pods for verifiable credentials
+ *
+ * (Code picked from https://gitlab.ilabt.imec.be/rml/util/solid-target-helper/-/blob/solid-target-helper-with-vc/podVCSetup.js?ref_type=heads)
+ * 
+ * @param {Object} status current status as in status file
+ * @param {String} vcService URL of the VC service
+ */
+async function prepareAllPods(status, vcService) {
+  for (const infoObject of Object.values(status.yarrrmlInfo)) {
+    console.log(`Preparing pod for ${infoObject.webId}.`);
+    console.log(`>>> Checking if ${infoObject.webId} is ready for VC.`);
+    const response = await fetch(infoObject.webId);
+    const card = await response.text();
+    if (card.includes("https://w3id.org/security#assertionMethod")) {
+      console.log('>>> it is...');
+    } else {
+      console.log('>>> Adding VC keypair.')
+      const response = await fetch(`${vcService}/setup`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          'email': infoObject.username,
+          'password': infoObject.password,
+          'css': infoObject.oidcIssuer,
+          'webId': infoObject.webId
+        })
+      });
+      const result = await response.text();
+      if (result === 'true') {
+        console.log(`>>> ${infoObject.webId} is ready for VC now.`);
+      } else {
+        console.error(`>>> Adding VC keypair to ${infoObject.webId} failed.`);
+      }
+    }
+  }
 }
 
 /**
@@ -97,11 +135,31 @@ WHERE {
 export async function step1(yarrrmlFile, statusFile) {
   const yarrrmlInfo = getNeededInfoFromYarrrmlFile(yarrrmlFile);
   const authFetchFunctions = await getAllAuthFetchFunctions(yarrrmlInfo);
-  const dataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctions);
+  const originalDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctions);
   const status = {
     yarrrmlInfo: yarrrmlInfo,
-    originalDataSources: dataSources
+    originalDataSources: originalDataSources
   };
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   console.log(`Step 1 finished; results in ${statusFile}.`);
+}
+
+/**
+ * Do the entire step2
+ *
+ * @param {String} statusFile name of the file where step1 saved its status and where step2 saves an update
+ * @param {String} vcService URL of the VC service
+ */
+export async function step2(statusFile, vcService) {
+  const status = JSON.parse(fs.readFileSync(statusFile));
+  const yarrrmlInfo = status.yarrrmlInfo; 
+  const authFetchFunctions = await getAllAuthFetchFunctions(yarrrmlInfo);
+  const newDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctions);
+  status.newDataSources = newDataSources;
+  fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
+  await prepareAllPods(status, vcService);
+  //addAllVerifiableCredentials(status, authFetchFunctions);
+  //deleteAllObsoleteDataSources(status, authFetchFunctions);
+  //deleteClientCredentials(status);
+  console.log(`Step 2 finished; pods updated; see also updated ${statusFile}.`);
 }
