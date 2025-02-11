@@ -169,6 +169,23 @@ async function putResource(resourceUrl, contentTypeOut, text, authFetchFunction)
 }
 
 /**
+ * Deletes a resource
+ * 
+ * Remark: linked .acl file will be deleted too, 
+ *
+ * @param {String} resourceUrl the resource URL
+ * @param {Function} authFetchFunction the (authenticated) fetch function to use
+ */
+async function deleteResource(resourceUrl, authFetchFunction) {
+  const response = await authFetchFunction(resourceUrl, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error(`Could not put ${resourceUrl}: ${response.status}`);
+  }
+}
+
+/**
  * Adds all verifiable credentials objects (replacing the original resources)
  *
  * @param {Object} status current status as in status file
@@ -187,9 +204,36 @@ async function addAllVerifiableCredentials(status, authFetchFunctions, vcService
           const [ contentTypeOut, vc ] = await makeVC(infoObject, contentTypeIn, text, vcService);
           //console.log(`Verifiable credentials: contentType: ${contentTypeOut}; vc: ${vc}.`);
           await putResource(resourceUrl, contentTypeOut, vc, authFetchFunctions[webId]);
-          console.log(`Put resource ${resourceUrl}.`);
+          console.log(`>>> Put resource ${resourceUrl}.`);
         } catch (e) {
           console.log(e);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Deletes all obsolete data sources
+ *
+ * @param {Object} status current status as in status file
+ * @param {Object} authFetchFunctions object containing an (authenticated) fetch function per webId
+ */
+async function deleteAllObsoleteDataSources(status, authFetchFunctions) {
+  for (const infoObject of Object.values(status.yarrrmlInfo)) {
+    const webId = infoObject.webId;
+    console.log(`Deleting obsolete data sources for ${webId}, if any.`);
+    const originalDataSources = status.originalDataSources[webId];
+    const newDataSources = status.newDataSources[webId];
+    for (const resourceUrl of originalDataSources) {
+      if (!newDataSources.includes(resourceUrl)) {
+        if (await ownedBy(resourceUrl, webId)) {
+          try {
+            await deleteResource(resourceUrl, authFetchFunctions[webId]);
+            console.log(`>>> Deleted resource ${resourceUrl}.`);
+          } catch (e) {
+            console.log(e);
+          }
         }
       }
     }
@@ -229,7 +273,7 @@ export async function step2(statusFile, vcService) {
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   await prepareAllPods(status, vcService);
   await addAllVerifiableCredentials(status, authFetchFunctions, vcService);
-  //await deleteAllObsoleteDataSources(status, authFetchFunctions);
+  await deleteAllObsoleteDataSources(status, authFetchFunctions);
   //await deleteClientCredentials(status);
   console.log(`Step 2 finished; pods updated; see also updated ${statusFile}.`);
 }
