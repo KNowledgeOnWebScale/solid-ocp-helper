@@ -3,12 +3,18 @@
   "version": "0.0.1",
   "description": "A command line interface to help getting things done on the Onto-DESIDE pods.",
   "main": "bin/cli.js -h",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test-step1": "node ./bin/cli.js step1 -y ./test/yarrrml.yml -s ./test/status.json"
   },
   "author": "Martin Vanbrabant",
   "license": "MIT",
   "dependencies": {
-    "commander": "^13.1.0"
+    "@comunica/query-sparql": "^4.0.2",
+    "@inrupt/solid-client-authn-core": "^2.3.0",
+    "commander": "^13.1.0",
+    "node-fetch": "^3.3.2",
+    "url-join": "^5.0.0",
+    "yaml": "^2.7.0"
   }
 }
