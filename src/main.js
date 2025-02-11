@@ -1,6 +1,6 @@
 import fs from 'fs';
 import YAML from 'yaml';
-import { getAuthenticatedFetch } from './clientCredentials.js';
+import { getToken, getAuthenticatedFetch, deleteTokenResource } from './clientCredentials.js';
 import { newEngine, queryTermsNotVariables } from './comunicaEngineWrapper.js';
 import { preparePod, makeVC } from './vcWrapper.js';
 
@@ -31,27 +31,31 @@ function getNeededInfoFromYarrrmlFile(yarrrmlFile) {
 }
 
 /**
- * Gets auth fetch functions for all entries in the step1 list
+ * Gets all auth fetch functions (and the tokens used to create them)
  *
  * @param {Object} yarrrmlInfo key: webId; value: object: relevant properties per webId from YARRRML file
- * @returns {Object} key: webId, value: fetch function
+ * @returns {Array} [0]: key: webID, value: token; [1]: key: webId, value: fetch function
  */
 async function getAllAuthFetchFunctions(yarrrmlInfo) {
+  const tokens = {};
   const authFetchFunctions = {};
   console.log('Getting authenticated fetch functions.');
   for (const infoObject of Object.values(yarrrmlInfo)) {
     console.log(`  Getting authenticated fetch function for ${infoObject.webId}.`);
-    authFetchFunctions[infoObject.webId] = await getAuthenticatedFetch(
+    tokens[infoObject.webId] = await getToken(
       infoObject.username,
       infoObject.password,
       infoObject.oidcIssuer,
-      infoObject.webId)
+      infoObject.webId);
+    authFetchFunctions[infoObject.webId] = await getAuthenticatedFetch(
+      tokens[infoObject.webId],
+      infoObject.oidcIssuer);
   }
-  return authFetchFunctions;
+  return [tokens, authFetchFunctions];
 }
 
 /**
- * Gets all data sources for all entries in the step1 list
+ * Gets all data sources
  *
  * @param {Object} yarrrmlInfo key: webId; value: object: relevant properties per webId from YARRRML file
  * @param {Object} authFetchFunctions key: webId, value: fetch function
@@ -89,6 +93,28 @@ WHERE {
     dataSources[infoObject.webId] = Array.from(new Set(allSources));
   }
   return dataSources;
+}
+
+/**
+ * Deletes all token resources used to create authFetchFunctions
+ * 
+ * Do this as soon as you do not need the authFetchFunctions any longer
+ *
+ * @param {Object} yarrrmlInfo key: webId; value: object: relevant properties per webId from YARRRML file
+ */
+async function deleteAllTokenResources(yarrrmlInfo, tokens) {
+  console.log('Deleting all token resources used to create authFetchFunctions.');
+  for (const infoObject of Object.values(yarrrmlInfo)) {
+    console.log(`  Deleting token resource for ${infoObject.webId}.`);
+    try {
+      await deleteTokenResource(infoObject.username,
+        infoObject.password,
+        infoObject.oidcIssuer,
+        tokens[infoObject.webId].resource);
+    } catch (e) {
+      console.error(e);
+    }
+  }
 }
 
 /**
@@ -253,12 +279,13 @@ async function deleteAllObsoleteDataSources(status, authFetchFunctions) {
  */
 export async function step1(yarrrmlFile, statusFile) {
   const yarrrmlInfo = getNeededInfoFromYarrrmlFile(yarrrmlFile);
-  const authFetchFunctions = await getAllAuthFetchFunctions(yarrrmlInfo);
+  const [tokens, authFetchFunctions] = await getAllAuthFetchFunctions(yarrrmlInfo);
   const originalDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctions);
   const status = {
     yarrrmlInfo: yarrrmlInfo,
     originalDataSources: originalDataSources
   };
+  await deleteAllTokenResources(yarrrmlInfo, tokens);
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   console.log(`Step 1 finished; results in ${statusFile}.`);
 }
@@ -272,13 +299,13 @@ export async function step1(yarrrmlFile, statusFile) {
 export async function step2(statusFile, vcService) {
   const status = JSON.parse(fs.readFileSync(statusFile));
   const yarrrmlInfo = status.yarrrmlInfo; 
-  const authFetchFunctions = await getAllAuthFetchFunctions(yarrrmlInfo);
+  const [tokens, authFetchFunctions] = await getAllAuthFetchFunctions(yarrrmlInfo);
   const newDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctions);
   status.newDataSources = newDataSources;
-  fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   await prepareAllPods(status, vcService);
   await addAllVerifiableCredentials(status, authFetchFunctions, vcService);
   await deleteAllObsoleteDataSources(status, authFetchFunctions);
-  //await deleteClientCredentials(status);
+  await deleteAllTokenResources(yarrrmlInfo, tokens);
+  fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   console.log(`Step 2 finished; pods updated; see also updated ${statusFile}.`);
 }

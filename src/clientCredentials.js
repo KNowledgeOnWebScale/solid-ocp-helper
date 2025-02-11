@@ -1,4 +1,5 @@
 // Code picked from https://gitlab.ilabt.imec.be/rml/util/solid-target-helper/-/blob/solid-target-helper-with-vc/client-credentials.js?ref_type=heads
+// Additions/changes marked "MVB"
 
 import fetch from 'node-fetch';
 import { createDpopHeader, generateDpopKeyPair, buildAuthenticatedFetch } from '@inrupt/solid-client-authn-core';
@@ -10,7 +11,7 @@ https://github.com/CommunitySolidServer/CommunitySolidServer/blob/862cc9a365f668
 */
 
 
-async function getAuthorisation(email, password, serverUrl){
+async function getAuthorization(email, password, serverUrl){
 // First we request the account API controls to find out where we can log in
   const indexResponse = await fetch(urljoin(serverUrl, '.account/'));
   const { controls } = await indexResponse.json();
@@ -92,11 +93,16 @@ async function requestAccessToken(token, serverUrl) {
   }
 }
 
-export async function getAuthenticatedFetch(email, password, serverUrl, webId) {
+// MVB added
+export async function getToken(email, password, serverUrl, webId) {
 
-  //console.log('Generating access token');
-  const authorisation = await getAuthorisation(email, password, serverUrl);
+  const authorisation = await getAuthorization(email, password, serverUrl);
   const token = await generateToken(webId, serverUrl, authorisation);
+  return token;
+}
+
+// MVB token as a parameter (result of calling getToken())
+export async function getAuthenticatedFetch(token, serverUrl) {
   const { accessToken, dpopKey } = await requestAccessToken(token, serverUrl);
 
 // The DPoP key needs to be the same key as the one used in the previous step.
@@ -105,4 +111,16 @@ export async function getAuthenticatedFetch(email, password, serverUrl, webId) {
 // authFetch can now be used as a standard fetch function that will authenticate as your WebID.
   //console.log("authFetch ready");
   return authFetch;
+}
+
+// MVB added
+export async function deleteTokenResource(email, password, serverUrl, tokenResource) {
+  const authorization = await getAuthorization(email, password, serverUrl);
+  const response = await fetch(tokenResource, {
+    headers: { authorization: `CSS-Account-Token ${authorization}` },
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error(`Could not delete token resource ${tokenResource}`);
+  }
 }
