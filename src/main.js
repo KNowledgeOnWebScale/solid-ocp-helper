@@ -38,8 +38,9 @@ function getNeededInfoFromYarrrmlFile(yarrrmlFile) {
  */
 async function getAllAuthFetchFunctions(yarrrmlInfo) {
   const authFetchFunctions = {};
+  console.log('Getting authenticated fetch functions.');
   for (const infoObject of Object.values(yarrrmlInfo)) {
-    console.log(`Getting authenticated fetch function for ${infoObject.webId}.`);
+    console.log(`  Getting authenticated fetch function for ${infoObject.webId}.`);
     authFetchFunctions[infoObject.webId] = await getAuthenticatedFetch(
       infoObject.username,
       infoObject.password,
@@ -66,8 +67,9 @@ WHERE {
 }
 `;
   const dataSources = {};
+  console.log('Getting data sources.');
   for (const infoObject of Object.values(yarrrmlInfo)) {
-    console.log(`Getting data sources for ${infoObject.webId}.`);
+    console.log(`  Getting data sources for ${infoObject.webId}.`);
     const indexQuery = infoObject.indexQuery || defaultIndexQuery;
     const context = {
       fetch: authFetchFunctions[infoObject.webId],
@@ -96,8 +98,9 @@ WHERE {
  * @param {String} vcService URL of the VC service
  */
 async function prepareAllPods(status, vcService) {
+  console.log('Preparing pods for VC.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
-    console.log(`Preparing pod of ${infoObject.webId}.`);
+    console.log(`  Preparing pod of ${infoObject.webId} for VC.`);
     await preparePod(infoObject, vcService);
   }
 }
@@ -193,9 +196,10 @@ async function deleteResource(resourceUrl, authFetchFunction) {
  * @param {String} vcService URL of the VC service
  */
 async function addAllVerifiableCredentials(status, authFetchFunctions, vcService) {
+  console.log('Adding verifiable credentials.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
     const webId = infoObject.webId;
-    console.log(`Adding verifiable credentials for ${webId}.`);
+    console.log(`  Adding verifiable credentials for ${webId}.`);
     for (const resourceUrl of status.newDataSources[webId]) {
       if (await ownedBy(resourceUrl, webId)) {
         try {
@@ -204,9 +208,9 @@ async function addAllVerifiableCredentials(status, authFetchFunctions, vcService
           const [ contentTypeOut, vc ] = await makeVC(infoObject, contentTypeIn, text, vcService);
           //console.log(`Verifiable credentials: contentType: ${contentTypeOut}; vc: ${vc}.`);
           await putResource(resourceUrl, contentTypeOut, vc, authFetchFunctions[webId]);
-          console.log(`>>> Put resource ${resourceUrl}.`);
+          console.log(`    Put resource ${resourceUrl}.`);
         } catch (e) {
-          console.log(e);
+          console.error(e);
         }
       }
     }
@@ -220,9 +224,10 @@ async function addAllVerifiableCredentials(status, authFetchFunctions, vcService
  * @param {Object} authFetchFunctions object containing an (authenticated) fetch function per webId
  */
 async function deleteAllObsoleteDataSources(status, authFetchFunctions) {
+  console.log('Deleting obsolete data sources, if any.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
     const webId = infoObject.webId;
-    console.log(`Deleting obsolete data sources for ${webId}, if any.`);
+    console.log(`  Deleting obsolete data sources for ${webId}, if any.`);
     const originalDataSources = status.originalDataSources[webId];
     const newDataSources = status.newDataSources[webId];
     for (const resourceUrl of originalDataSources) {
@@ -230,9 +235,9 @@ async function deleteAllObsoleteDataSources(status, authFetchFunctions) {
         if (await ownedBy(resourceUrl, webId)) {
           try {
             await deleteResource(resourceUrl, authFetchFunctions[webId]);
-            console.log(`>>> Deleted resource ${resourceUrl}.`);
+            console.log(`    Deleted resource ${resourceUrl}.`);
           } catch (e) {
-            console.log(e);
+            console.error(e);
           }
         }
       }

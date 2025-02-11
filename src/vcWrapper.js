@@ -8,13 +8,13 @@
  */
 export async function preparePod(authInfo, vcService) {
   const { webId, username, password, oidcIssuer } = authInfo;
-  console.log(`>>> Checking if ${webId} is ready for VC.`);
+  console.log(`    Checking if ${webId} is ready for VC.`);
   const response = await fetch(webId);
   const card = await response.text();
   if (card.includes("https://w3id.org/security#assertionMethod")) {
-    console.log('>>> it is...');
+    console.log('    It is...');
   } else {
-    console.log('>>> Adding VC keypair.')
+    console.log('    Adding VC keypair.')
     const response = await fetch(`${vcService}/setup`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -27,9 +27,9 @@ export async function preparePod(authInfo, vcService) {
     });
     const result = await response.text();
     if (result === 'true') {
-      console.log(`>>> ${webId} is ready for VC now.`);
+      console.log(`    ${webId} is ready for VC now.`);
     } else {
-      throw new Error(`>>> Adding VC keypair to ${webId} failed.`);
+      throw new Error(`Adding VC keypair to ${webId} failed.`);
     }
   }
 }
