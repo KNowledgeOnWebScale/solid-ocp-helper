@@ -3,7 +3,7 @@ targets:
 authentications: 
   auth1:
     type: cssclientcredentials
-    username: electronics_user2@example.com
+    email: electronics_user2@example.com
     password: electronics_user2
     oidcIssuer: http://localhost:3011/
     webId: http://localhost:3011/electronics_user2/profile/card#me 
@@ -11,7 +11,7 @@ authentications:
     indexQuery: 'SELECT ?resource WHERE {?s <http://www.w3.org/2000/01/rdf-schema#seeAlso> ?resource .}'  	
   auth2:
     type: cssclientcredentials
-    username: electronics_user6@example.com
+    email: electronics_user6@example.com
     password: electronics_user6
     oidcIssuer: http://localhost:3011/
     webId: http://localhost:3011/electronics_user6/profile/card#me 

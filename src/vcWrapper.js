@@ -7,7 +7,7 @@
  * @param {String} vcService URL of the VC service
  */
 export async function preparePod(authInfo, vcService) {
-  const { webId, username, password, oidcIssuer } = authInfo;
+  const { webId, email, password, oidcIssuer } = authInfo;
   console.log(`    Checking if ${webId} is ready for VC.`);
   const response = await fetch(webId);
   const card = await response.text();
@@ -19,7 +19,7 @@ export async function preparePod(authInfo, vcService) {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        'email': username,
+        'email': email,
         'password': password,
         'css': oidcIssuer,
         'webId': webId
@@ -44,7 +44,7 @@ export async function preparePod(authInfo, vcService) {
  * @returns {Array} [content type of the verifiable credentials object, the verifiable credentials object serialized as text]
  */
 export async function makeVC(authInfo, contentType, text, vcService) {
-  const { webId, username, password, oidcIssuer } = authInfo;
+  const { webId, email, password, oidcIssuer } = authInfo;
   const response = await fetch(`${vcService}/issue`, {
     method: 'POST',
     headers: {
@@ -52,7 +52,7 @@ export async function makeVC(authInfo, contentType, text, vcService) {
     },
     body: JSON.stringify({
       'contentType': contentType,
-      'email': username,
+      'email': email,
       'password': password,
       'css': oidcIssuer,
       'webId': webId,

@@ -18,7 +18,7 @@ function getNeededInfoFromYarrrmlFile(yarrrmlFile) {
   for (const auth of Object.values(yarrrml.authentications)) {
     if (auth.type == "cssclientcredentials") {
       yarrrmlInfo[auth.webId] = {
-        username: auth.username,
+        email: auth.email,
         password: auth.password,
         oidcIssuer: auth.oidcIssuer,
         webId: auth.webId, 
@@ -43,7 +43,7 @@ async function getAllAuthFetchFunctions(yarrrmlInfo) {
   for (const infoObject of Object.values(yarrrmlInfo)) {
     console.log(`  Getting authenticated fetch function for ${infoObject.webId}.`);
     tokens[infoObject.webId] = await getToken(
-      infoObject.username,
+      infoObject.email,
       infoObject.password,
       infoObject.oidcIssuer,
       infoObject.webId);
@@ -107,7 +107,7 @@ async function deleteAllTokenResources(yarrrmlInfo, tokens) {
   for (const infoObject of Object.values(yarrrmlInfo)) {
     console.log(`  Deleting token resource for ${infoObject.webId}.`);
     try {
-      await deleteTokenResource(infoObject.username,
+      await deleteTokenResource(infoObject.email,
         infoObject.password,
         infoObject.oidcIssuer,
         tokens[infoObject.webId].resource);
