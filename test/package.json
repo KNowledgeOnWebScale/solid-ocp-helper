@@ -1,0 +1,18 @@
+{
+  "name": "helper test support",
+  "version": "0.0.1",
+  "scripts": {
+    "setup:test:dirs": "rimraf ./css/css-rootdir && mkdirp ./css/css-rootdir",
+    "setup:test:css": "npx @solid/community-server --port 3000 --config ./css/css.json --seedConfig ./css/css-users.json --rootFilePath ./css/css-rootdir",
+    "setup:test": "npm run setup:test:dirs && npm run setup:test:css"
+  },
+  "author": "Martin Vanbrabant",
+  "license": "MIT",
+  "devDependencies": {
+    "mkdirp": "^3.0.1",
+    "rimraf": "^6.0.1"
+  },
+  "dependencies": {
+    "@solid/community-server": "^7.1.6"
+  }
+}

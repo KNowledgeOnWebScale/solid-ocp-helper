@@ -1,0 +1,102 @@
+[ {
+  "@id" : "http://example.com/DKGP543-REACHCompliance",
+  "@type" : [ "http://w3id.org/CEON/ontology/product/Compliance", "http://w3id.org/CEON/ontology/provenance/Statement" ],
+  "http://w3id.org/CEON/ontology/product/complianceWith" : [ {
+    "@id" : "http://w3id.org/CEON/demo/electronics/REACH"
+  } ],
+  "http://w3id.org/CEON/ontology/product/hasCertificate" : [ {
+    "@id" : "https://cloud.ilabt.imec.be/index.php/s/sSbDm7mWtDfE2eY"
+  } ],
+  "http://w3id.org/CEON/ontology/provenance/statementAbout" : [ {
+    "@id" : "http://example.com/product-DKGP543"
+  } ]
+}, {
+  "@id" : "http://example.com/manufacturer-company1",
+  "http://w3id.org/CEON/demo/electronics/siteCountry" : [ {
+    "@value" : "Austria"
+  } ]
+}, {
+  "@id" : "http://example.com/producing-company1-DKGP543",
+  "http://w3id.org/CEON/ontology/actorODP/participantRole" : [ {
+    "@id" : "http://w3id.org/CEON/ontology/actor/manufacturer"
+  } ],
+  "http://w3id.org/CEON/ontology/actorODP/participatingActor" : [ {
+    "@id" : "http://example.com/manufacturer-company1"
+  } ],
+  "http://w3id.org/CEON/ontology/actorODP/participatingResource" : [ {
+    "@id" : "http://example.com/product-DKGP543"
+  } ]
+}, {
+  "@id" : "http://example.com/product-DKGP543",
+  "@type" : [ "http://w3id.org/CEON/demo/electronics/ElectronicsProduct" ],
+  "http://w3id.org/CEON/demo/electronics/hasCompliance" : [ {
+    "@id" : "http://example.com/DKGP543-REACHCompliance"
+  } ],
+  "http://w3id.org/CEON/ontology/product/hasProductComponent" : [ {
+    "@id" : "http://example.com/product-IUYT567"
+  }, {
+    "@id" : "http://example.com/product-JUY9242"
+  }, {
+    "@id" : "http://example.com/product-OIP8597"
+  }, {
+    "@id" : "http://example.com/product-VTE0953"
+  }, {
+    "@id" : "http://example.com/product-XYU3987"
+  } ],
+  "http://w3id.org/CEON/ontology/resourceODP/hasMatter" : [ {
+    "@id" : "http://w3id.org/CEON/demo/electronics/RareEarthMaterial"
+  } ],
+  "http://www.w3.org/2000/01/rdf-schema#label" : [ {
+    "@value" : "Speaker"
+  } ]
+}, {
+  "@id" : "http://example.com/product-DKGP543-DysprosiumComposition",
+  "@type" : [ "http://w3id.org/CEON/ontology/product/MatterComposition", "http://w3id.org/CEON/ontology/provenance/Statement" ],
+  "http://qudt.org/schema/qudt/hasUnit" : [ {
+    "@id" : "https://qudt.org/vocab/unit/PERCENT"
+  } ],
+  "http://w3id.org/CEON/ontology/product/associatedWithMatter" : [ {
+    "@id" : "http://example.com/Dy"
+  } ],
+  "http://w3id.org/CEON/ontology/product/compositionOf" : [ {
+    "@id" : "http://example.com/product-DKGP543"
+  } ]
+}, {
+  "@id" : "http://example.com/product-DKGP543-NeodymiumComposition",
+  "@type" : [ "http://w3id.org/CEON/ontology/product/MatterComposition", "http://w3id.org/CEON/ontology/provenance/Statement" ],
+  "http://qudt.org/schema/qudt/hasUnit" : [ {
+    "@id" : "https://qudt.org/vocab/unit/PERCENT"
+  } ],
+  "http://w3id.org/CEON/ontology/product/associatedWithMatter" : [ {
+    "@id" : "http://example.com/Nd"
+  } ],
+  "http://w3id.org/CEON/ontology/product/compositionOf" : [ {
+    "@id" : "http://example.com/product-DKGP543"
+  } ]
+}, {
+  "@id" : "http://example.com/product-DKGP543-PostCustomerRecycledContent",
+  "@type" : [ "http://w3id.org/CEON/demo/electronics/PostCustomerRecycledContent", "http://w3id.org/CEON/ontology/provenance/Statement" ],
+  "http://qudt.org/schema/qudt/hasUnit" : [ {
+    "@id" : "https://qudt.org/vocab/unit/PERCENT"
+  } ],
+  "http://qudt.org/schema/qudt/numericValue" : [ {
+    "@type" : "http://www.w3.org/2001/XMLSchema#decimal",
+    "@value" : "5"
+  } ],
+  "http://w3id.org/CEON/ontology/provenance/statementAbout" : [ {
+    "@id" : "http://example.com/product-DKGP543"
+  } ]
+}, {
+  "@id" : "http://example.com/product-DKGP543-PreCustomerRecycledContent",
+  "@type" : [ "http://w3id.org/CEON/demo/electronics/PreCustomerRecycledContent", "http://w3id.org/CEON/ontology/provenance/Statement" ],
+  "http://qudt.org/schema/qudt/hasUnit" : [ {
+    "@id" : "https://qudt.org/vocab/unit/PERCENT"
+  } ],
+  "http://qudt.org/schema/qudt/numericValue" : [ {
+    "@type" : "http://www.w3.org/2001/XMLSchema#decimal",
+    "@value" : "5"
+  } ],
+  "http://w3id.org/CEON/ontology/provenance/statementAbout" : [ {
+    "@id" : "http://example.com/product-DKGP543"
+  } ]
+} ]
