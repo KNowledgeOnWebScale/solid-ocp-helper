@@ -5,7 +5,9 @@
   "main": "bin/cli.js -h",
   "type": "module",
   "scripts": {
-    "test-step1": "node ./bin/cli.js step1 -y ./test/yarrrml.yml -s ./test/status.json"
+    "test:step1": "node ./bin/cli.js step1 -y ../test/files/yarrrml.yml -s ../test/files/status.json",
+    "test:step2": "node ./bin/cli.js step2 -s ../test/files/status.json -v",
+    "test:steps": "npm run test:step1 && npm run test:step2"
   },
   "author": "Martin Vanbrabant",
   "license": "MIT",
@@ -14,6 +16,7 @@
     "@inrupt/solid-client-authn-core": "^2.3.0",
     "commander": "^13.1.0",
     "node-fetch": "^3.3.2",
+    "node-self": "^1.0.2",
     "url-join": "^5.0.0",
     "yaml": "^2.7.0"
   }

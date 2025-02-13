@@ -2,7 +2,7 @@ import fs from 'fs';
 import YAML from 'yaml';
 import { getToken, getAuthenticatedFetch, deleteTokenResource } from './clientCredentials.js';
 import { newEngine, queryTermsNotVariables } from './comunicaEngineWrapper.js';
-import { preparePod, makeVC } from './vcWrapper.js';
+import { preparePod, makeVC, verifyVC } from './vcWrapper.js';
 
 /**
  * Gets all info from YARRRML file
@@ -121,13 +121,13 @@ async function deleteAllTokenResources(yarrrmlInfo, tokens) {
  * Prepares all pods for verifiable credentials
  *
  * @param {Object} status current status as in status file
- * @param {String} vcService URL of the VC service
+ * @param {Object} authFetchFunctions object containing an (authenticated) fetch function per webId
  */
-async function prepareAllPods(status, vcService) {
+async function prepareAllPods(status, authFetchFunctions) {
   console.log('Preparing pods for VC.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
     console.log(`  Preparing pod of ${infoObject.webId} for VC.`);
-    await preparePod(infoObject, vcService);
+    await preparePod(infoObject, authFetchFunctions[infoObject.webId]);
   }
 }
 
@@ -219,9 +219,8 @@ async function deleteResource(resourceUrl, authFetchFunction) {
  *
  * @param {Object} status current status as in status file
  * @param {Object} authFetchFunctions object containing an (authenticated) fetch function per webId
- * @param {String} vcService URL of the VC service
  */
-async function addAllVerifiableCredentials(status, authFetchFunctions, vcService) {
+async function addAllVerifiableCredentials(status, authFetchFunctions) {
   console.log('Adding verifiable credentials.');
   for (const infoObject of Object.values(status.yarrrmlInfo)) {
     const webId = infoObject.webId;
@@ -231,7 +230,7 @@ async function addAllVerifiableCredentials(status, authFetchFunctions, vcService
         try {
           const [ contentTypeIn, text ] = await getResourceText(resourceUrl, authFetchFunctions[webId]);
           //console.log(`Read resource ${resourceUrl}; contentType: ${contentTypeIn}; text: ${text}.`);
-          const [ contentTypeOut, vc ] = await makeVC(infoObject, contentTypeIn, text, vcService);
+          const [contentTypeOut, vc] = await makeVC(infoObject, contentTypeIn, text, authFetchFunctions[webId]);
           //console.log(`Verifiable credentials: contentType: ${contentTypeOut}; vc: ${vc}.`);
           await putResource(resourceUrl, contentTypeOut, vc, authFetchFunctions[webId]);
           console.log(`    Put resource ${resourceUrl}.`);
@@ -241,6 +240,44 @@ async function addAllVerifiableCredentials(status, authFetchFunctions, vcService
       }
     }
   }
+}
+
+/**
+ * Verifies all verifiable credentials objects
+ *
+ * @param {Object} status current status as in status file
+ * @param {Object} authFetchFunctions object containing an (authenticated) fetch function per webId
+ * @returns {String} overview of the verification results
+ */
+async function verifyAllVerifiableCredentials(status, authFetchFunctions) {
+  let nrPassed = 0;
+  let nrFailed = 0;
+  let nrInvalid = 0;
+  let nrErrors = 0;
+
+  console.log('Verifying verifiable credentials.');
+  for (const infoObject of Object.values(status.yarrrmlInfo)) {
+    const webId = infoObject.webId;
+    console.log(`  Verifying verifiable credentials for ${webId}.`);
+    for (const resourceUrl of status.newDataSources[webId]) {
+      if (await ownedBy(resourceUrl, webId)) {
+        const [contentTypeIn, text] = await getResourceText(resourceUrl, authFetchFunctions[webId]);
+        //console.log(`Read resource ${resourceUrl}; contentType: ${contentTypeIn}; text: ${text}.`);
+        const res = await verifyVC(text);
+        console.log(`    Verification of ${resourceUrl}: ${res}.`);
+        if (res.includes('error')) {
+          nrErrors++;
+        } else if (res.includes('passed')) {
+          nrPassed++;
+        } else if (res.includes('failed')) {
+          nrFailed++;
+        } else if (res.includes('invalid')) {
+          nrInvalid++;
+        }
+      }
+    }
+  }
+  return `${nrPassed} passed, ${nrFailed} failed, ${nrInvalid} invalid, ${nrErrors} execution errors`;
 }
 
 /**
@@ -285,8 +322,8 @@ export async function step1(yarrrmlFile, statusFile) {
     yarrrmlInfo: yarrrmlInfo,
     originalDataSources: originalDataSources
   };
-  await deleteAllTokenResources(yarrrmlInfo, tokens);
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
+  await deleteAllTokenResources(yarrrmlInfo, tokens);
   console.log(`Step 1 finished; results in ${statusFile}.`);
 }
 
@@ -294,18 +331,28 @@ export async function step1(yarrrmlFile, statusFile) {
  * Do the entire step2
  *
  * @param {String} statusFile name of the file where step1 saved its status and where step2 saves an update
- * @param {String} vcService URL of the VC service
+ * @param {Boolean} writeVCs write VC resources if true
+ * @param {Boolean} verifyVCs verify VC resources if true
  */
-export async function step2(statusFile, vcService) {
+export async function step2(statusFile, writeVCs, verifyVCs) {
   const status = JSON.parse(fs.readFileSync(statusFile));
   const yarrrmlInfo = status.yarrrmlInfo; 
   const [tokens, authFetchFunctions] = await getAllAuthFetchFunctions(yarrrmlInfo);
   const newDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctions);
   status.newDataSources = newDataSources;
-  await prepareAllPods(status, vcService);
-  await addAllVerifiableCredentials(status, authFetchFunctions, vcService);
+  fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
+  if (writeVCs) {
+    await prepareAllPods(status, authFetchFunctions);
+    await addAllVerifiableCredentials(status, authFetchFunctions);
+  } else {
+    console.log('Not writing verifiable credential resources, on request...');
+  }
+  let verificationSummary = "";
+  if (verifyVCs) {
+    verificationSummary = "; verification summary: " + await verifyAllVerifiableCredentials(status, authFetchFunctions);
+  }
   await deleteAllObsoleteDataSources(status, authFetchFunctions);
   await deleteAllTokenResources(yarrrmlInfo, tokens);
-  fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
-  console.log(`Step 2 finished; pods updated; see also updated ${statusFile}.`);
+  
+  console.log(`Step 2 finished; pods updated; see also updated ${statusFile}${verificationSummary}.`);
 }
