@@ -1,0 +1,43 @@
+{
+  "yarrrmlInfo": {
+    "http://localhost:3000/tester1/profile/card#me": {
+      "email": "tester1@example.com",
+      "password": "tester1",
+      "oidcIssuer": "http://localhost:3000/",
+      "webId": "http://localhost:3000/tester1/profile/card#me",
+      "index": "http://localhost:3000/tester1/data/index",
+      "indexQuery": "SELECT ?resource WHERE {?s <http://www.w3.org/2000/01/rdf-schema#seeAlso> ?resource .}"
+    },
+    "http://localhost:3000/tester2/profile/card#me": {
+      "email": "tester2@example.com",
+      "password": "tester2",
+      "oidcIssuer": "http://localhost:3000/",
+      "webId": "http://localhost:3000/tester2/profile/card#me",
+      "index": "http://localhost:3000/tester2/data/index"
+    }
+  },
+  "originalDataSources": {
+    "http://localhost:3000/tester1/profile/card#me": [
+      "http://localhost:3000/tester1/data/index",
+      "http://localhost:3000/tester1/data/product-1",
+      "http://localhost:3000/tester1/data/product-2"
+    ],
+    "http://localhost:3000/tester2/profile/card#me": [
+      "http://localhost:3000/tester2/data/index",
+      "http://localhost:3000/tester2/data/product-1",
+      "http://localhost:3000/tester2/data/product-2"
+    ]
+  },
+  "newDataSources": {
+    "http://localhost:3000/tester1/profile/card#me": [
+      "http://localhost:3000/tester1/data/index",
+      "http://localhost:3000/tester1/data/product-1",
+      "http://localhost:3000/tester1/data/product-2"
+    ],
+    "http://localhost:3000/tester2/profile/card#me": [
+      "http://localhost:3000/tester2/data/index",
+      "http://localhost:3000/tester2/data/product-1",
+      "http://localhost:3000/tester2/data/product-2"
+    ]
+  }
+}
