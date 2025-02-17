@@ -34,11 +34,12 @@ function getNeededInfoFromYarrrmlFile(yarrrmlFile) {
  * Gets all auth fetch functions (and the tokens used to create them)
  *
  * @param {Object} yarrrmlInfo key: webId; value: object: relevant properties per webId from YARRRML file
- * @returns {Array} [0]: key: webID, value: token; [1]: key: webId, value: fetch function
+ * @returns {Array} [0]: key: webID, value: token; [1]: key: webId, value: fetch function; [2]: key: webId, value: fetch function for Comunica
  */
 async function getAllAuthFetchFunctions(yarrrmlInfo) {
   const tokens = {};
   const authFetchFunctions = {};
+  const authFetchFunctionsForComunica = {};
   console.log('Getting authenticated fetch functions.');
   for (const infoObject of Object.values(yarrrmlInfo)) {
     console.log(`  Getting authenticated fetch function for ${infoObject.webId}.`);
@@ -47,21 +48,32 @@ async function getAllAuthFetchFunctions(yarrrmlInfo) {
       infoObject.password,
       infoObject.oidcIssuer,
       infoObject.webId);
-    authFetchFunctions[infoObject.webId] = await getAuthenticatedFetch(
+    const authFetchFunction = await getAuthenticatedFetch(
       tokens[infoObject.webId],
       infoObject.oidcIssuer);
+    // next function to present work around jsonld files for Comunica
+    const authFetchFunctionForComunica = async (arg) => {
+      const response = await authFetchFunction(arg, {
+        headers: {
+          Accept: "application/n-quads,application/trig;q=0.9,text/turtle;q=0.8,application/n-triples;q=0.7,*/*;q=0.1"
+        }
+      });
+      return response;
+    };
+    authFetchFunctions[infoObject.webId] = authFetchFunction; 
+    authFetchFunctionsForComunica[infoObject.webId] = authFetchFunctionForComunica; 
   }
-  return [tokens, authFetchFunctions];
+  return [tokens, authFetchFunctions, authFetchFunctionsForComunica];
 }
 
 /**
  * Gets all data sources
  *
  * @param {Object} yarrrmlInfo key: webId; value: object: relevant properties per webId from YARRRML file
- * @param {Object} authFetchFunctions key: webId, value: fetch function
+ * @param {Object} authFetchFunctionsForComunica key: webId, value: fetch function for Comunica
  * @returns {Object} key: webId, value: array of data sources
  */
-async function getAllDataSources(yarrrmlInfo, authFetchFunctions) {
+async function getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica) {
   const defaultIndexQuery = `
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
@@ -76,20 +88,22 @@ WHERE {
     console.log(`  Getting data sources for ${infoObject.webId}.`);
     const indexQuery = infoObject.indexQuery || defaultIndexQuery;
     const context = {
-      fetch: authFetchFunctions[infoObject.webId],
+      fetch: authFetchFunctionsForComunica[infoObject.webId],
       // start at the index in first iteration
       sources: [infoObject.index],
       lenient: true
     }
     let allSources = [infoObject.index];
     let newSources = [];
+    let levelCountDown = 1;
     newEngine();
     do {
       newSources = await queryTermsNotVariables(indexQuery, context);
       allSources = [...allSources, ...newSources];
       // dig deeper in next iteration
       context.sources = newSources;
-    } while (newSources.length > 0)
+      levelCountDown--;
+    } while (levelCountDown > 0 && newSources.length > 0)
     dataSources[infoObject.webId] = Array.from(new Set(allSources));
   }
   return dataSources;
@@ -138,7 +152,7 @@ async function prepareAllPods(status, authFetchFunctions) {
  * @param {String} webId the webId
  * @returns {Boolean} 
  */
-async function ownedBy(resourceUrl, webId) {
+async function isOwnedBy(resourceUrl, webId) {
   const podQuery = `
 PREFIX pim: <http://www.w3.org/ns/pim/space#>
 
@@ -148,13 +162,13 @@ WHERE {
 }
 `;
   const pods = await queryTermsNotVariables(podQuery, { sources: [webId] });
-  let owned = pods.some((pod) => resourceUrl.startsWith(pod));
-  if (!owned) {
+  let isOwned = pods.some((pod) => resourceUrl.startsWith(pod));
+  if (!isOwned) {
     // fallback for the case of no pim:storage predicate
     const pod = webId.substring(0, webId.lastIndexOf('profile/card'));
-    owned = resourceUrl.startsWith(pod);
+    isOwned = resourceUrl.startsWith(pod);
   }
-  return owned;
+  return isOwned;
 }
 
 /**
@@ -226,7 +240,7 @@ async function addAllVerifiableCredentials(status, authFetchFunctions) {
     const webId = infoObject.webId;
     console.log(`  Adding verifiable credentials for ${webId}.`);
     for (const resourceUrl of status.newDataSources[webId]) {
-      if (await ownedBy(resourceUrl, webId)) {
+      if (await isOwnedBy(resourceUrl, webId)) {
         try {
           const [ contentTypeIn, text ] = await getResourceText(resourceUrl, authFetchFunctions[webId]);
           //console.log(`Read resource ${resourceUrl}; contentType: ${contentTypeIn}; text: ${text}.`);
@@ -260,7 +274,7 @@ async function verifyAllVerifiableCredentials(status, authFetchFunctions) {
     const webId = infoObject.webId;
     console.log(`  Verifying verifiable credentials for ${webId}.`);
     for (const resourceUrl of status.newDataSources[webId]) {
-      if (await ownedBy(resourceUrl, webId)) {
+      if (await isOwnedBy(resourceUrl, webId)) {
         const [contentTypeIn, text] = await getResourceText(resourceUrl, authFetchFunctions[webId]);
         //console.log(`Read resource ${resourceUrl}; contentType: ${contentTypeIn}; text: ${text}.`);
         const res = await verifyVC(text);
@@ -295,7 +309,7 @@ async function deleteAllObsoleteDataSources(status, authFetchFunctions) {
     const newDataSources = status.newDataSources[webId];
     for (const resourceUrl of originalDataSources) {
       if (!newDataSources.includes(resourceUrl)) {
-        if (await ownedBy(resourceUrl, webId)) {
+        if (await isOwnedBy(resourceUrl, webId)) {
           try {
             await deleteResource(resourceUrl, authFetchFunctions[webId]);
             console.log(`    Deleted resource ${resourceUrl}.`);
@@ -316,8 +330,8 @@ async function deleteAllObsoleteDataSources(status, authFetchFunctions) {
  */
 export async function step1(yarrrmlFile, statusFile) {
   const yarrrmlInfo = getNeededInfoFromYarrrmlFile(yarrrmlFile);
-  const [tokens, authFetchFunctions] = await getAllAuthFetchFunctions(yarrrmlInfo);
-  const originalDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctions);
+  const [tokens, authFetchFunctions, authFetchFunctionsForComunica] = await getAllAuthFetchFunctions(yarrrmlInfo);
+  const originalDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica);
   const status = {
     yarrrmlInfo: yarrrmlInfo,
     originalDataSources: originalDataSources
@@ -337,8 +351,8 @@ export async function step1(yarrrmlFile, statusFile) {
 export async function step2(statusFile, writeVCs, verifyVCs) {
   const status = JSON.parse(fs.readFileSync(statusFile));
   const yarrrmlInfo = status.yarrrmlInfo; 
-  const [tokens, authFetchFunctions] = await getAllAuthFetchFunctions(yarrrmlInfo);
-  const newDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctions);
+  const [tokens, authFetchFunctions, authFetchFunctionsForComunica] = await getAllAuthFetchFunctions(yarrrmlInfo);
+  const newDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica);
   status.newDataSources = newDataSources;
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   if (writeVCs) {
