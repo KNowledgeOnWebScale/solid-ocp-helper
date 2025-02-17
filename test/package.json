@@ -1,5 +1,5 @@
 {
-  "name": "helper test support",
+  "name": "helper-test-support",
   "version": "0.0.1",
   "scripts": {
     "setup:test:dirs": "rimraf ./css/css-rootdir && mkdirp ./css/css-rootdir",
