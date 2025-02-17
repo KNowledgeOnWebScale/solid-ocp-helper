@@ -24,6 +24,10 @@ This is the main command line. Execute without parameters to get help:
 node bin/cli.js
 ```
 
+## Restrictions
+
+- The indexQuery mentioned in the input YARRRML file will only be executed on the index file itself, and not on the files resulting from that query.
+
 ## Testing
 
 ### In directory `test`

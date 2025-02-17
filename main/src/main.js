@@ -95,13 +95,15 @@ WHERE {
     }
     let allSources = [infoObject.index];
     let newSources = [];
+    let levelCountDown = 1;
     newEngine();
     do {
       newSources = await queryTermsNotVariables(indexQuery, context);
       allSources = [...allSources, ...newSources];
       // dig deeper in next iteration
       context.sources = newSources;
-    } while (newSources.length > 0)
+      levelCountDown--;
+    } while (levelCountDown > 0 && newSources.length > 0)
     dataSources[infoObject.webId] = Array.from(new Set(allSources));
   }
   return dataSources;
