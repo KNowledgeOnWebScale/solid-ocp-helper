@@ -1,17 +1,89 @@
 [
   {
-    "email": "tester1@example.com",
-    "password": "tester1",
+    "email": "user1@example.com",
+    "password": "user1",
     "pods": [
-      { "name": "tester1" }
+      { "name": "user1" }
     ]
   },
   {
-    "email": "tester2@example.com",
-    "password": "tester2",
+    "email": "user2@example.com",
+    "password": "user2",
     "pods": [
       {
-        "name": "tester2"
+        "name": "user2"
+      }
+    ]
+  },
+  {
+    "email": "test1user1@example.com",
+    "password": "test1user1",
+    "pods": [
+      {
+        "name": "test1user1"
+      }
+    ]
+  },
+  {
+    "email": "test1user2@example.com",
+    "password": "test1user2",
+    "pods": [
+      {
+        "name": "test1user2"
+      }
+    ]
+  },
+  {
+    "email": "test2user1@example.com",
+    "password": "test2user1",
+    "pods": [
+      {
+        "name": "test2user1"
+      }
+    ]
+  },
+  {
+    "email": "test2user2@example.com",
+    "password": "test2user2",
+    "pods": [
+      {
+        "name": "test2user2"
+      }
+    ]
+  },
+  {
+    "email": "test3user1@example.com",
+    "password": "test3user1",
+    "pods": [
+      {
+        "name": "test3user1"
+      }
+    ]
+  },
+  {
+    "email": "test3user2@example.com",
+    "password": "test3user2",
+    "pods": [
+      {
+        "name": "test3user2"
+      }
+    ]
+  },
+  {
+    "email": "test4user1@example.com",
+    "password": "test4user1",
+    "pods": [
+      {
+        "name": "test4user1"
+      }
+    ]
+  },
+  {
+    "email": "test4user2@example.com",
+    "password": "test4user2",
+    "pods": [
+      {
+        "name": "test4user2"
       }
     ]
   }

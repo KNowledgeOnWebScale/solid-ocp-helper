@@ -71,9 +71,10 @@ async function getAllAuthFetchFunctions(yarrrmlInfo) {
  *
  * @param {Object} yarrrmlInfo key: webId; value: object: relevant properties per webId from YARRRML file
  * @param {Object} authFetchFunctionsForComunica key: webId, value: fetch function for Comunica
+ * @param {Number} indexSearchDepth how deep to search for data sources in the index file
  * @returns {Object} key: webId, value: array of data sources
  */
-async function getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica) {
+async function getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica, indexSearchDepth) {
   const defaultIndexQuery = `
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
@@ -83,7 +84,8 @@ WHERE {
 }
 `;
   const dataSources = {};
-  console.log('Getting data sources.');
+  console.log(`Getting data sources; indexSearchDepth = ${indexSearchDepth}.`);
+  const maxLevels = indexSearchDepth > 0 ? indexSearchDepth : Number.MAX_SAFE_INTEGER;
   for (const infoObject of Object.values(yarrrmlInfo)) {
     console.log(`  Getting data sources for ${infoObject.webId}.`);
     const indexQuery = infoObject.indexQuery || defaultIndexQuery;
@@ -95,7 +97,7 @@ WHERE {
     }
     let allSources = [infoObject.index];
     let newSources = [];
-    let levelCountDown = 1;
+    let levelCountDown = maxLevels;
     newEngine();
     do {
       newSources = await queryTermsNotVariables(indexQuery, context);
@@ -244,10 +246,15 @@ async function addAllVerifiableCredentials(status, authFetchFunctions) {
         try {
           const [ contentTypeIn, text ] = await getResourceText(resourceUrl, authFetchFunctions[webId]);
           //console.log(`Read resource ${resourceUrl}; contentType: ${contentTypeIn}; text: ${text}.`);
-          const [contentTypeOut, vc] = await makeVC(infoObject, contentTypeIn, text, authFetchFunctions[webId]);
-          //console.log(`Verifiable credentials: contentType: ${contentTypeOut}; vc: ${vc}.`);
-          await putResource(resourceUrl, contentTypeOut, vc, authFetchFunctions[webId]);
-          console.log(`    Put resource ${resourceUrl}.`);
+          const v = await verifyVC(text);
+          if (v.includes('passed')) {
+            console.log(`    Resource ${resourceUrl} already has verifiable credentials; not updated.`);
+          } else {
+            const [contentTypeOut, vc] = await makeVC(infoObject, contentTypeIn, text, authFetchFunctions[webId]);
+            //console.log(`Verifiable credentials: contentType: ${contentTypeOut}; vc: ${vc}.`);
+            await putResource(resourceUrl, contentTypeOut, vc, authFetchFunctions[webId]);
+            console.log(`    Put resource ${resourceUrl}.`);
+          }
         } catch (e) {
           console.error(e);
         }
@@ -327,13 +334,18 @@ async function deleteAllObsoleteDataSources(status, authFetchFunctions) {
  *
  * @param {String} yarrrmlFile name of the YARRRML file
  * @param {String} statusFile name of the file where step1 saves its status
+ * @param {Number} indexSearchDepth how deep to search for data sources in the index file
+ * 
  */
-export async function step1(yarrrmlFile, statusFile) {
+export async function step1(yarrrmlFile, statusFile, indexSearchDepth) {
   const yarrrmlInfo = getNeededInfoFromYarrrmlFile(yarrrmlFile);
   const [tokens, authFetchFunctions, authFetchFunctionsForComunica] = await getAllAuthFetchFunctions(yarrrmlInfo);
-  const originalDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica);
+  const originalDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica, indexSearchDepth);
   const status = {
     yarrrmlInfo: yarrrmlInfo,
+    savedOptions: {
+      indexSearchDepth: indexSearchDepth
+    },
     originalDataSources: originalDataSources
   };
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
@@ -352,7 +364,7 @@ export async function step2(statusFile, writeVCs, verifyVCs) {
   const status = JSON.parse(fs.readFileSync(statusFile));
   const yarrrmlInfo = status.yarrrmlInfo; 
   const [tokens, authFetchFunctions, authFetchFunctionsForComunica] = await getAllAuthFetchFunctions(yarrrmlInfo);
-  const newDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica);
+  const newDataSources = await getAllDataSources(yarrrmlInfo, authFetchFunctionsForComunica, status?.savedOptions?.indexSearchDepth);
   status.newDataSources = newDataSources;
   fs.writeFileSync(statusFile, JSON.stringify(status, null, 2));
   if (writeVCs) {

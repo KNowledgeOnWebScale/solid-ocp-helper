@@ -3,18 +3,18 @@ targets:
 authentications: 
   auth1:
     type: cssclientcredentials
-    email: tester1@example.com
-    password: tester1
+    email: user1@example.com
+    password: user1
     oidcIssuer: http://localhost:3000/
-    webId: http://localhost:3000/tester1/profile/card#me 
-    index: http://localhost:3000/tester1/data/index
+    webId: http://localhost:3000/user1/profile/card#me 
+    index: http://localhost:3000/user1/data/index
     indexQuery: 'SELECT ?resource WHERE {?s <http://www.w3.org/2000/01/rdf-schema#seeAlso> ?resource .}'  	
   auth2:
     type: cssclientcredentials
-    email: tester2@example.com
-    password: tester2
+    email: user2@example.com
+    password: user2
     oidcIssuer: http://localhost:3000/
-    webId: http://localhost:3000/tester2/profile/card#me 
-    index: http://localhost:3000/tester2/data/index
+    webId: http://localhost:3000/user2/profile/card#me 
+    index: http://localhost:3000/user2/data/index
 mappings: 
   # (omitted)
