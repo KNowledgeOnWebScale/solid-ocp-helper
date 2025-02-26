@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-02-26
+
+### Fixed
+
+- The check to avoid making a verifiable credentials version of a resource that already is a verifiable credentials version now also works
+if data source is not json(ld) ([internal issue #6](https://gitlab.ilabt.imec.be/KNoWS/projects/onto-deside/helper/-/issues/6)).
+
 ## [0.2.0] - 2025-02-26
 
 ### Added
@@ -25,6 +32,7 @@ result in HTTP status 429 "Too Many Requests" when searching for index files wit
 
 First release.
 
-[Unreleased]: https://github.com/KNowledgeOnWebScale/solid-ocp-helper/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/KNowledgeOnWebScale/solid-ocp-helper/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/KNowledgeOnWebScale/solid-ocp-helper/releases/tag/v0.2.1
 [0.2.0]: https://github.com/KNowledgeOnWebScale/solid-ocp-helper/releases/tag/v0.2.0
 [0.1.0]: https://github.com/KNowledgeOnWebScale/solid-ocp-helper/releases/tag/v0.1.0

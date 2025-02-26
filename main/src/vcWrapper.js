@@ -50,26 +50,31 @@ export async function makeVC(authInfo, contentType, text, authFetchFunction) {
 /**
  * Verify a verifiable credentials object
  *
- * @param {String} signedCredentialText the verifiable credentials object serialized as text
+ * @param {String} signedCredentialText the verifiable credentials object as text
  * @returns {String} 
  */
 export async function verifyVC(signedCredentialText) {
   let v;
-  let ret;
+
+  let verifiableCredential;
+  try {
+    verifiableCredential = JSON.parse(signedCredentialText);
+  } catch (e) {
+    return "verification impossible; invalid contents (not JSON)";
+  }
 
   try {
-    v = await coreVerify(JSON.parse(signedCredentialText));
-  } catch (e) {
-    ret = `verifying error: ${e.message}`;
-  }
-  if (v.validationResult.valid) {
-    if (v.verificationResult.verified) {
-      ret = "verification passed";
+    v = await coreVerify(verifiableCredential);
+    if (v.validationResult.valid) {
+      if (v.verificationResult.verified) {
+        return "verification passed";
+      } else {
+        return "verification failed";
+      }
     } else {
-      ret = "verification failed";
+      return "verification impossible; invalid contents";
     }
-  } else {
-    ret = "verification impossible; invalid contents";
+  } catch (e) {
+    return `verifying error: ${e.message}`;
   }
-  return ret;
 }
