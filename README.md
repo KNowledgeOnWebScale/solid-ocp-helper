@@ -2,54 +2,63 @@
 
 A command line interface to help getting things done on the Onto-DESIDE pods.
 
+* [Prerequisites](#prerequisites)
+* [Installation](#installation)
+* [Set up infrastructure](#set-up-infrastructure)
+* [Usage](#usage)
+* [Testing](#testing)
+
 ## Prerequisites
 
-[Node](https://nodejs.org/en) (tested with version v20.17.0)
+[Node](https://nodejs.org/en) (tested with version v20.17.0).
+
+For testing, you'll need a bash shell.
 
 ## Installation
 
-### In directory `main`
+```bash
+cd main
+npm i
+cd ..
+```
+
+## Set up infrastructure
+
+> This is only needed if you want to run the example or the tests.
 
 ```bash
+cd test
 npm i
+npm run setup:test
 ```
+
+Execute all commands below in a new terminal window.
+
+To stop the test infrastructuree, press `<Ctrl-C>`.
 
 ## Usage
 
-### In directory `main`
+```bash
+cd main
+```
 
-This is the main command line. Execute without parameters to get help:
+Execute the command line without parameters to get help:
 
 ```bash
 node bin/cli.js
 ```
 
-## Restrictions
+An example `yarrrml.yml` is provided. The resulting status is in `status.json`.
 
-- The indexQuery mentioned in the input YARRRML file will only be executed on the index file itself, and not on the files resulting from that query.
+The command line is prepared for you in `package.json`. To run:
+
+```bash
+npm run example
+```
 
 ## Testing
 
-### In directory `test`
-
-Install test infrastructure:
-
 ```bash
-npm i
+cd test
+./test.sh
 ```
-
-Spin up test infrastructure:
-
-```bash
-npm run setup:test
-```
-
-### In directory `main`
-
-Run the steps of main with test data:
-
-```bash
-npm run test:steps
-```
-
-The test is successful if the final console line contains `verification summary: 6 passed, 0 failed, 0 invalid, 0 execution errors`.
